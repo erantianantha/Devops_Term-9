@@ -4,7 +4,7 @@
 
 --- what docker says the mount is
   type=bind  ro=true
-  source=/c/Users/tarun/OneDrive/Attachments/Desktop/nen erripuk/anantha/Docker network/task3-bindmount
+  source=/c/Users/anantha/OneDrive/Attachments/Desktop/nen erripuk/anantha/Docker network/task3-bindmount
   target=/usr/share/nginx/html
   type is 'bind' -- it points at a directory I chose. A named volume
   would say type=volume and be stored under docker's own data root.

@@ -198,7 +198,7 @@ MSYS_NO_PATHCONV=1 docker run -d --name ana-bindmount -p 8182:80 \
 ```
 $ docker inspect ana-bindmount --format '{{range .Mounts}}...{{end}}'
   type=bind  ro=true
-  source=/c/Users/tarun/.../anantha/Docker network/task3-bindmount
+  source=/c/Users/anantha/.../anantha/Docker network/task3-bindmount
   target=/usr/share/nginx/html
 ```
 

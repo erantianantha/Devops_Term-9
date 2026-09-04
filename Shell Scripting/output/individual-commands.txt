@@ -4,10 +4,10 @@ $ date
 Fri Sep  4 23:12:49 IST 2026
 
 $ hostname
-Tarun
+anantha
 
 $ whoami
-tarun
+anantha
 
 $ uname -sr
 MINGW64_NT-10.0-26200 3.5.4-395fda67.x86_64
@@ -19,10 +19,10 @@ D:                     49G   98M   49G   1% /d
 
 $ ps -ef | head -5
      UID     PID    PPID  TTY        STIME COMMAND
-   tarun     556       1 ?        18:45:26 /tmp/claude/c--Users-tarun-OneDrive-Attachments-Desktop-nen-erripuk/d16ba273-929d-4206-8bb7-4fbeea8df46a/scratchpad/venv/Scripts/python
-   tarun     637     635 ?        18:47:22 /c/Program Files/nodejs/node
-   tarun    5126    5124 ?        22:24:13 /c/Program Files/Common Files/Oracle/Java/javapath/java
-   tarun    5124       1 ?        22:24:13 /usr/bin/bash
+   anantha     556       1 ?        18:45:26 /tmp/claude/c--Users-anantha-OneDrive-Attachments-Desktop-nen-erripuk/d16ba273-929d-4206-8bb7-4fbeea8df46a/scratchpad/venv/Scripts/python
+   anantha     637     635 ?        18:47:22 /c/Program Files/nodejs/node
+   anantha    5126    5124 ?        22:24:13 /c/Program Files/Common Files/Oracle/Java/javapath/java
+   anantha    5124       1 ?        22:24:13 /usr/bin/bash
 
 $ ps -ef | wc -l
 13
@@ -31,7 +31,7 @@ $ ps -ef | wc -l
 
 $ mkdir -p /tmp/redir-demo && touch /tmp/redir-demo/notes.txt && ls -l /tmp/redir-demo
 total 0
--rw-r--r-- 1 tarun 197609 0 Sep  4 23:12 notes.txt
+-rw-r--r-- 1 anantha 197609 0 Sep  4 23:12 notes.txt
 
 $ echo 'first line'  >  /tmp/redir-demo/notes.txt
 $ echo 'second line' >> /tmp/redir-demo/notes.txt

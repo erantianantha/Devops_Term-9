@@ -7,7 +7,7 @@ Every block below is real output from this machine (Windows 11, Git Bash). Raw c
 
 ```
 $ hostname
-Tarun
+anantha
 ```
 
 The name this machine answers to on the local network. It comes from the OS configuration, not from
