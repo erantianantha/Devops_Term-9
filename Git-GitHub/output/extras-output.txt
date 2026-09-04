@@ -1,0 +1,192 @@
+warning: in the working copy of 'settings.conf', LF will be replaced by CRLF the next time Git touches it
+
+============================================================
+ SETUP  the same line edited on two branches
+============================================================
+warning: in the working copy of 'settings.conf', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'settings.conf', LF will be replaced by CRLF the next time Git touches it
+
+$ git log --oneline --graph --all
+* 715dad3 feature: raise timeout to 30
+| * 31f2f8a main: raise timeout to 10
+|/  
+* 6bc939f Initial settings.conf
+
+  Line 1 of settings.conf now says something different on each branch.
+  Cherry-picking one onto the other cannot be resolved automatically.
+
+============================================================
+ A cherry-pick that conflicts
+============================================================
+
+$ git cherry-pick 715dad3
+Auto-merging settings.conf
+CONFLICT (content): Merge conflict in settings.conf
+error: could not apply 715dad3... feature: raise timeout to 30
+hint: After resolving the conflicts, mark them with
+hint: "git add/rm <pathspec>", then run
+hint: "git cherry-pick --continue".
+hint: You can instead skip this commit with "git cherry-pick --skip".
+hint: To abort and get back to the state before "git cherry-pick",
+hint: run "git cherry-pick --abort".
+hint: Disable this message with "git config advice.mergeConflict false"
+
+$ git status --short
+UU settings.conf
+
+  UU = Unmerged, changed on Us and on Them. That is a conflict, not an error.
+
+$ cat settings.conf
+<<<<<<< HEAD
+timeout = 10
+=======
+timeout = 30
+>>>>>>> 715dad3 (feature: raise timeout to 30)
+retries = 1
+
+  Reading the markers:
+    <<<<<<< HEAD          what the branch you are on already had
+    =======               the divider
+    >>>>>>> <hash>        what the commit being applied wants
+
+  Nothing is committed and nothing is lost. Git is waiting.
+
+============================================================
+ Way out 1: --abort
+============================================================
+
+$ git cherry-pick --abort
+
+$ git status --short
+
+$ cat settings.conf
+timeout = 10
+retries = 1
+
+  Everything is exactly as it was before the pick started. Knowing this
+  exists is what makes trying a cherry-pick low risk.
+
+============================================================
+ Way out 2: resolve, then --continue
+============================================================
+
+$ git cherry-pick 715dad3
+Auto-merging settings.conf
+CONFLICT (content): Merge conflict in settings.conf
+error: could not apply 715dad3... feature: raise timeout to 30
+hint: After resolving the conflicts, mark them with
+hint: "git add/rm <pathspec>", then run
+hint: "git cherry-pick --continue".
+hint: You can instead skip this commit with "git cherry-pick --skip".
+hint: To abort and get back to the state before "git cherry-pick",
+hint: run "git cherry-pick --abort".
+hint: Disable this message with "git config advice.mergeConflict false"
+
+  (edited settings.conf to the value we want, markers deleted)
+
+$ grep -c '<<<<<<<' settings.conf || true
+0
+
+$ git add settings.conf
+warning: in the working copy of 'settings.conf', LF will be replaced by CRLF the next time Git touches it
+
+$ git cherry-pick --continue --no-edit
+[main f7df29b] feature: raise timeout to 30
+ Date: Fri Sep 4 23:03:09 2026 +0530
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+$ git log --oneline -3
+f7df29b feature: raise timeout to 30
+31f2f8a main: raise timeout to 10
+6bc939f Initial settings.conf
+
+$ cat settings.conf
+timeout = 30
+retries = 1
+
+  Committing a file with a marker still in it is a genuine classic. Grepping
+  for '<<<<<<<' before `git add` costs nothing and catches it every time.
+
+============================================================
+ Way out 3: --skip
+============================================================
+warning: in the working copy of 'settings.conf', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'settings.conf', LF will be replaced by CRLF the next time Git touches it
+
+$ git cherry-pick a135bb7
+Auto-merging settings.conf
+CONFLICT (content): Merge conflict in settings.conf
+error: could not apply a135bb7... another: retries to 5
+hint: After resolving the conflicts, mark them with
+hint: "git add/rm <pathspec>", then run
+hint: "git cherry-pick --continue".
+hint: You can instead skip this commit with "git cherry-pick --skip".
+hint: To abort and get back to the state before "git cherry-pick",
+hint: run "git cherry-pick --abort".
+hint: Disable this message with "git config advice.mergeConflict false"
+
+$ git cherry-pick --skip
+
+$ git log --oneline -2
+5cd1acc main: retries to 9
+f7df29b feature: raise timeout to 30
+
+  --skip drops this commit and moves on. It is for a pick that turned
+  out to be unnecessary -- usually because the change is already there.
+
+============================================================
+ -x, for a traceable duplicate
+============================================================
+warning: in the working copy of 'settings.conf', LF will be replaced by CRLF the next time Git touches it
+
+$ git cherry-pick -x f0e7419
+[main a53b940] traceable: add a note
+ Date: Fri Sep 4 23:03:11 2026 +0530
+ 1 file changed, 1 insertion(+)
+
+$ git log -1 --format='%B'
+traceable: add a note
+
+(cherry picked from commit f0e7419280b524466dcf5f9e0c99b13506def921)
+
+
+  The '(cherry picked from commit ...)' line is added by -x. On any shared
+  branch this is worth doing: six months later, 'why does this change
+  exist twice?' has an answer written into the history.
+
+============================================================
+ -n, apply without committing
+============================================================
+warning: in the working copy of 'settings.conf', LF will be replaced by CRLF the next time Git touches it
+
+$ git cherry-pick -n b079b72
+
+$ git status --short
+M  settings.conf
+
+$ git log --oneline -1
+a53b940 traceable: add a note
+
+  The change is staged, no commit was made, and the log is unchanged.
+  This is the one to use when the fix needs adjusting for the branch it
+  is landing on.
+
+$ git reset -q --hard HEAD && git status --short
+
+============================================================
+ the reference
+============================================================
+  git cherry-pick <hash>          one commit
+  git cherry-pick <a> <b> <c>     several, applied in the order given
+  git cherry-pick A..B            a range, EXCLUDING A
+  git cherry-pick A^..B           a range, INCLUDING A
+  git cherry-pick -x <hash>       record where it came from
+  git cherry-pick -n <hash>       apply, do not commit
+  git cherry-pick -e <hash>       edit the message while picking
+
+  git cherry-pick --continue      after staging a resolution
+  git cherry-pick --abort         undo the whole thing
+  git cherry-pick --skip          give up on this one commit
+
+  Ranges in git are exclusive of the start, which is why A..B does not include
+  A and A^..B does. Getting that wrong quietly drops one commit.

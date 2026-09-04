@@ -1,0 +1,80 @@
+Lab directory: /tmp/tmp.fJmIglyd5A
+
+=============== 1. Create the original file ===============
+hello from the original file
+178374 -rw-r--r-- 1 root root 29 Sep  4 17:55 original.txt
+
+=============== 2. Create a hard link and a soft link ===============
+total 8
+178374 -rw-r--r-- 2 root root 29 Sep  4 17:55 hard.txt
+178374 -rw-r--r-- 2 root root 29 Sep  4 17:55 original.txt
+178389 lrwxrwxrwx 1 root root 12 Sep  4 17:55 soft.txt -> original.txt
+
+Read the inode column (first): hard.txt and original.txt share one.
+Read the link-count column (after permissions): it is 2 for them, 1 for soft.txt.
+Read the type char: '-' for regular files, 'l' for the symlink.
+
+=============== 3. Where does the symlink point? ===============
+original.txt
+/tmp/tmp.fJmIglyd5A/original.txt
+
+=============== 4. Edit through one name, read through the others ===============
+--- original.txt ---
+hello from the original file
+a line appended via hard.txt
+--- soft.txt ---
+hello from the original file
+a line appended via hard.txt
+Both see the change, because there is only one set of data blocks.
+
+=============== 5. Find every hard link to the file ===============
+./hard.txt
+./original.txt
+(stat also spells it out:)
+name=original.txt inode=178374 links=2 size=58
+name=hard.txt inode=178374 links=2 size=58
+name=soft.txt inode=178389 links=1 size=12
+
+=============== 6. THE BIG ONE — delete the original ===============
+total 4
+-rw-r--r-- 1 root root 58 Sep  4 17:55 hard.txt
+lrwxrwxrwx 1 root root 12 Sep  4 17:55 soft.txt -> original.txt
+
+--- cat hard.txt (expect: still works) ---
+hello from the original file
+a line appended via hard.txt
+
+--- cat soft.txt (expect: No such file or directory) ---
+cat: soft.txt: No such file or directory
+
+Link count on hard.txt has dropped from 2 to 1:
+-rw-r--r-- 1 root root 58 Sep  4 17:55 hard.txt
+soft.txt is now a dangling link. Find them with:
+./soft.txt
+
+=============== 7. Recreate the original — the symlink heals itself ===============
+brand new file, same name
+The symlink stored a PATH, not an inode, so the new file at that path revives it.
+
+=============== 8. Things hard links cannot do ===============
+trying: ln somedir hardlink-to-dir
+  -> ln: somedir: hard link not allowed for directory
+trying: ln -s somedir softlink-to-dir  (this one is allowed)
+lrwxrwxrwx 1 root root 7 Sep  4 17:55 softlink-to-dir -> somedir
+
+=============== 9. Deleting the links themselves ===============
+total 8
+-rw-r--r-- 1 root root   26 Sep  4 17:55 original.txt
+lrwxrwxrwx 1 root root    7 Sep  4 17:55 softlink-to-dir -> somedir
+drwxr-xr-x 2 root root 4096 Sep  4 17:55 somedir
+original.txt is untouched. Removing a link never removes the data
+unless it was the LAST link.
+
+=============== Cleanup ===============
+Removed /tmp/tmp.fJmIglyd5A
+
+Recap:
+  hard link -> same inode, no original/copy distinction, survives deletion of
+               any other name, same filesystem only, no directories.
+  soft link -> its own inode holding a path string, can cross filesystems and
+               link directories, breaks if the target path goes away.

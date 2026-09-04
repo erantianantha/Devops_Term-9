@@ -1,0 +1,37 @@
+### ping 8.8.8.8  (an IP: tests routing only)
+
+Pinging 8.8.8.8 with 32 bytes of data:
+Reply from 8.8.8.8: bytes=32 time=18ms TTL=120
+Reply from 8.8.8.8: bytes=32 time=35ms TTL=120
+Reply from 8.8.8.8: bytes=32 time=35ms TTL=120
+Reply from 8.8.8.8: bytes=32 time=18ms TTL=120
+
+Ping statistics for 8.8.8.8:
+    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),
+Approximate round trip times in milli-seconds:
+    Minimum = 18ms, Maximum = 35ms, Average = 26ms
+
+### ping google.com  (a name: tests DNS as well)
+
+Pinging google.com [192.178.211.102] with 32 bytes of data:
+Reply from 192.178.211.102: bytes=32 time=19ms TTL=109
+Reply from 192.178.211.102: bytes=32 time=30ms TTL=109
+Reply from 192.178.211.102: bytes=32 time=15ms TTL=109
+Reply from 192.178.211.102: bytes=32 time=125ms TTL=109
+
+Ping statistics for 192.178.211.102:
+    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),
+Approximate round trip times in milli-seconds:
+    Minimum = 15ms, Maximum = 125ms, Average = 47ms
+
+### ping the default gateway
+
+Pinging 100.128.160.1 with 32 bytes of data:
+Reply from 100.128.160.1: bytes=32 time=78ms TTL=64
+Reply from 100.128.160.1: bytes=32 time=2ms TTL=64
+Reply from 100.128.160.1: bytes=32 time=5ms TTL=64
+
+Ping statistics for 100.128.160.1:
+    Packets: Sent = 3, Received = 3, Lost = 0 (0% loss),
+Approximate round trip times in milli-seconds:
+    Minimum = 2ms, Maximum = 78ms, Average = 28ms

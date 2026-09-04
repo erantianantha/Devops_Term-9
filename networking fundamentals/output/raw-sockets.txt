@@ -1,0 +1,32 @@
+### netstat -an : listening sockets (first 15)
+  TCP    0.0.0.0:80             0.0.0.0:0              LISTENING
+  TCP    0.0.0.0:135            0.0.0.0:0              LISTENING
+  TCP    0.0.0.0:445            0.0.0.0:0              LISTENING
+  TCP    0.0.0.0:5000           0.0.0.0:0              LISTENING
+  TCP    0.0.0.0:5040           0.0.0.0:0              LISTENING
+  TCP    0.0.0.0:7680           0.0.0.0:0              LISTENING
+  TCP    0.0.0.0:8085           0.0.0.0:0              LISTENING
+  TCP    0.0.0.0:8086           0.0.0.0:0              LISTENING
+  TCP    0.0.0.0:8090           0.0.0.0:0              LISTENING
+  TCP    0.0.0.0:8090           0.0.0.0:0              LISTENING
+  TCP    0.0.0.0:8091           0.0.0.0:0              LISTENING
+  TCP    0.0.0.0:8092           0.0.0.0:0              LISTENING
+  TCP    0.0.0.0:8093           0.0.0.0:0              LISTENING
+  TCP    0.0.0.0:8094           0.0.0.0:0              LISTENING
+  TCP    0.0.0.0:8095           0.0.0.0:0              LISTENING
+
+### netstat -an : established connections (first 10)
+  TCP    100.128.174.94:49311   104.26.6.150:443       ESTABLISHED
+  TCP    100.128.174.94:49363   40.79.167.9:443        ESTABLISHED
+  TCP    100.128.174.94:49418   4.145.79.81:443        ESTABLISHED
+  TCP    100.128.174.94:49670   172.67.71.108:443      ESTABLISHED
+  TCP    100.128.174.94:50591   13.107.246.48:443      ESTABLISHED
+  TCP    100.128.174.94:50852   34.54.84.110:443       ESTABLISHED
+  TCP    100.128.174.94:51168   160.79.104.10:443      ESTABLISHED
+  TCP    100.128.174.94:53267   160.79.104.10:443      ESTABLISHED
+  TCP    100.128.174.94:54699   172.67.70.232:443      ESTABLISHED
+  TCP    100.128.174.94:55362   192.178.211.188:5228   ESTABLISHED
+
+### how many of each
+listening : 95
+established: 44

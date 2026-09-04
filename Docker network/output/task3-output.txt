@@ -1,0 +1,67 @@
+
+--- starting nginx with the host directory mounted read-only
+  $ docker run -d -p 8182:80 -v "$PWD/task3-bindmount:/usr/share/nginx/html:ro" nginx:alpine
+
+--- what docker says the mount is
+  type=bind  ro=true
+  source=/c/Users/tarun/OneDrive/Attachments/Desktop/nen erripuk/anantha/Docker network/task3-bindmount
+  target=/usr/share/nginx/html
+  type is 'bind' -- it points at a directory I chose. A named volume
+  would say type=volume and be stored under docker's own data root.
+
+--- version 1, as served
+  <title>bind mount — version 1</title>
+  <span class="v">VERSION 1</span>
+  <h1>Served from a bind mount</h1>
+
+--- editing the file ON THE HOST -- the container is not touched
+  sed changed the file on the Windows filesystem. No docker command ran.
+
+--- version 2, as served -- same container, no restart
+  <title>bind mount — version 2</title>
+  <span class="v">VERSION 2</span>
+  <h1>Edited while it was running</h1>
+NAMES           STATUS
+ana-bindmount   Up 2 seconds
+  the STATUS uptime never reset: this container has not been restarted.
+
+--- read-only really is read-only
+  sh: can't create /usr/share/nginx/html/index.html: Read-only file system
+
+--- the mount REPLACED the directory, it did not merge with it
+  total 8
+  drwxrwxrwx    1 root     root          4096 Sep  4 17:20 .
+  drwxr-xr-x    3 root     root          4096 Sep  2 21:04 ..
+  -rwxrwxrwx    1 root     root          1106 Sep  4 17:20 index.html
+  nginx's own index.html and 50x.html are gone. They are still in the
+  image and come back the moment the mount is removed:
+    50x.html
+    index.html
+
+--- putting the file back to version 1
+  <span class="v">VERSION 1</span>
+
+  bind mount vs named volume vs tmpfs
+
+    bind mount    -v /abs/host/path:/in/container   a directory you point at
+                  edit on the host, container sees it immediately.
+                  for development and for config files.
+
+    named volume  -v myvol:/in/container            docker manages the storage
+                  survives the container, lives under docker's data root.
+                  for databases and anything that must persist.
+
+    tmpfs         --tmpfs /in/container             memory only, gone on stop
+                  for secrets and scratch files that must never hit a disk.
+
+  How docker tells the first two apart: if the part before the colon starts
+  with / or a drive letter it is a bind mount, otherwise it is treated as a
+  volume NAME and docker creates it. Typing `-v data:/var/lib/postgresql/data`
+  when you meant `./data` silently gives you a volume instead of a directory,
+  and everything appears to work until you go looking for the files.
+
+  Also worth knowing: a bind mount whose source does not exist does not error.
+  Docker creates an empty directory and mounts that, so a typo in the path
+  shows up as a mysteriously empty document root.
+
+  clean up: bash task3-bindmount.sh clean

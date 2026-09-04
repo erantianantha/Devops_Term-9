@@ -1,0 +1,117 @@
+
+--- creating three user-defined bridge networks
+  created edge-net
+  created core-net
+  created island-net
+NAME           DRIVER    SCOPE
+backend-net    bridge    local
+bridge         bridge    local
+core-net       bridge    local
+edge-net       bridge    local
+frontend-net   bridge    local
+island-net     bridge    local
+isolated-net   bridge    local
+
+--- starting containers
+Unable to find image 'postgres:16-alpine' locally
+16-alpine: Pulling from library/postgres
+7f5de3d007ea: Pulling fs layer
+6a47e1b9b254: Pulling fs layer
+f0e7204f9584: Pulling fs layer
+19a2a5ab27c1: Pulling fs layer
+5e81018bec01: Pulling fs layer
+be6f407f5414: Pulling fs layer
+8225e2970a7f: Pulling fs layer
+27d0ba4f668a: Pulling fs layer
+b053c4426c4a: Pulling fs layer
+48d0d8b0e136: Pulling fs layer
+5e81018bec01: Download complete
+7f5de3d007ea: Download complete
+6a47e1b9b254: Download complete
+be6f407f5414: Download complete
+19a2a5ab27c1: Download complete
+27d0ba4f668a: Download complete
+48d0d8b0e136: Download complete
+8225e2970a7f: Download complete
+b053c4426c4a: Download complete
+6a47e1b9b254: Pull complete
+19a2a5ab27c1: Pull complete
+5e81018bec01: Pull complete
+be6f407f5414: Pull complete
+c58682903a2d: Download complete
+7dec47ad1967: Download complete
+f0e7204f9584: Download complete
+8225e2970a7f: Pull complete
+f0e7204f9584: Pull complete
+27d0ba4f668a: Pull complete
+48d0d8b0e136: Pull complete
+b053c4426c4a: Pull complete
+7f5de3d007ea: Pull complete
+Digest: sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
+Status: Downloaded newer image for postgres:16-alpine
+  service is now attached to edge-net AND core-net
+NAMES      IMAGE                PORTS
+castaway   nginx:alpine         80/tcp
+store      postgres:16-alpine   5432/tcp
+service    nginx:alpine         80/tcp
+gateway    nginx:alpine         0.0.0.0:8180->80/tcp, [::]:8180->80/tcp
+
+--- addresses handed out by each network
+  gateway   edge-net=172.21.0.2 
+  service   core-net=172.22.0.3 edge-net=172.21.0.3 
+  store     core-net=172.22.0.2 
+  castaway  island-net=172.23.0.2 
+
+--- waiting for postgres to accept TCP connections
+  ready after 2s
+
+--- connections that SHOULD work (a shared network)
+  gateway   -> service   :80    OK
+  service   -> gateway   :80    OK
+  service   -> store     :5432  OK
+
+--- connections that SHOULD fail (no shared network)
+  gateway   -> castaway  :80    unreachable
+  castaway  -> service   :80    unreachable
+  gateway   -> store     :5432  unreachable
+
+--- what the failure actually is
+  $ docker exec gateway nslookup store
+    Non-authoritative answer:
+    
+    ** server can't find store: NXDOMAIN
+    
+
+  the name does not resolve. gateway is not blocked from reaching store,
+  it cannot even work out an address for it: docker's embedded DNS only
+  answers for containers that share a network with the asker.
+
+--- name resolution working, for contrast
+  $ docker exec gateway nslookup service
+    Non-authoritative answer:
+    Name:	service
+    Address: 172.21.0.3
+    
+
+--- fetching a page across the network by name
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <title>Welcome to nginx!</title>
+    <style>
+
+--- the database answering on the network it shares with service
+                                             version                                          
+    ------------------------------------------------------------------------------------------
+     PostgreSQL 16.15 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+                                                          List of databases
+       Name    |  Owner   | Encoding | Locale Provider |  Collate   |   Ctype    | ICU Locale | ICU Rules |   Access privileges   
+    -----------+----------+----------+-----------------+------------+------------+------------+-----------+-----------------------
+     appdb     | postgres | UTF8     | libc            | en_US.utf8 | en_US.utf8 |            |           | 
+     postgres  | postgres | UTF8     | libc            | en_US.utf8 | en_US.utf8 |            |           | 
+     template0 | postgres | UTF8     | libc            | en_US.utf8 | en_US.utf8 |            |           | =c/postgres          +
+
+--- done
+  gateway is published: http://localhost:8180
+  store has no published port at all, on purpose
+  clean up with: bash task1-networking.sh clean

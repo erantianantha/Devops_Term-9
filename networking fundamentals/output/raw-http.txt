@@ -1,0 +1,25 @@
+### curl -I https://example.com
+HTTP/1.1 200 OK
+Date: Fri, 04 Sep 2026 17:46:39 GMT
+Content-Type: text/html
+Connection: keep-alive
+Server: cloudflare
+last-modified: Wed, 02 Sep 2026 22:14:26 GMT
+allow: GET, HEAD
+Accept-Ranges: bytes
+Age: 3224
+cf-cache-status: HIT
+CF-RAY: a35ed09ea8f83ab3-BOM
+
+
+### curl -s -o nul -w timing breakdown, https://www.wikipedia.org
+dns_lookup:   0.181256s
+tcp_connect:  0.253964s
+tls_done:     0.814917s
+first_byte:   0.906310s
+total:        1.123379s
+http_code:    200
+remote_ip:    103.102.166.224
+
+### curl to a port that is not open (connection refused vs timeout)
+curl: (7) Failed to connect to 127.0.0.1 port 9 after 2043 ms: Could not connect to server

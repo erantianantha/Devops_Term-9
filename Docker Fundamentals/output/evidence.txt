@@ -1,0 +1,67 @@
+### docker ps
+NAMES        IMAGE        STATUS                    PORTS
+ana-nginx    ana-nginx    Up 22 seconds             0.0.0.0:8083->80/tcp, [::]:8083->80/tcp
+ana-react    ana-react    Up 23 seconds             0.0.0.0:8082->80/tcp, [::]:8082->80/tcp
+ana-apache   ana-apache   Up 24 seconds             0.0.0.0:8081->80/tcp, [::]:8081->80/tcp
+ana-java     ana-java     Up 25 seconds             0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp
+ana-python   ana-python   Up 26 seconds             0.0.0.0:5000->5000/tcp, [::]:5000->5000/tcp
+ana-node     ana-node     Up 27 seconds (healthy)   0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp
+
+### docker images
+REPOSITORY   TAG       SIZE
+ana-react    latest    73.9MB
+ana-nginx    latest    73.7MB
+ana-apache   latest    96.2MB
+ana-java     latest    454MB
+ana-python   latest    196MB
+ana-node     latest    204MB
+
+### the identifying line of each page
+--- localhost:3000
+    <title>Hello World :: Node.js</title>
+    <span class="stack">Node.js + Express</span>
+--- localhost:5000
+    <title>Hello World :: Python</title>
+    <span class="stack">Python + Flask</span>
+--- localhost:8080
+    <title>Hello World :: Java</title>
+    <span class="stack">Java :: JDK HttpServer</span>
+--- localhost:8081
+    <title>Hello World :: Apache</title>
+    <span class="stack">Apache HTTP Server</span>
+--- localhost:8082
+    <title>Hello World :: React</title>
+--- localhost:8083
+    <title>Hello World :: Nginx</title>
+    <span class="stack">Nginx</span>
+
+### health endpoints
+:3000 -> {"ok":true,"service":"nodejs","host":"1691c1846997","uptimeSeconds":28}
+:5000 -> {"host":"f207a5174014","ok":true,"service":"python"}
+:8080 -> {"ok":true,"service":"java","host":"e836a360f4d6"}
+:8082 -> ok
+:8083 -> ok
+
+### headers proving each custom config is the one in force
+-- apache (extra.conf sets X-Served-By)
+HTTP/1.1 200 OK
+Server: Apache/2.4.68 (Unix)
+X-Served-By: apache-container
+-- nginx (nginx.conf sets X-Served-By)
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+X-Served-By: nginx-container
+-- react (index.html must be no-store, assets immutable)
+HTTP/1.1 200 OK
+Cache-Control: no-store
+/assets/index-Ig63Hrjp.js
+
+### 404 behaviour: the static nginx says 404, the SPA falls back to index.html
+nginx-app  /nope -> 404
+React-app  /nope -> 200
+java-app   /nope -> 404
+
+### healthcheck state reported by docker itself (only ana-node declares one)
+/ana-node healthy
+/ana-python no healthcheck declared
+/ana-java no healthcheck declared

@@ -1,0 +1,11 @@
+# One line per app: folder | image/container name | host port | container port | marker
+#
+# The marker is a string that appears ONLY on that app's page. Grepping for
+# "Hello World" would match all six, so a container that failed to start would
+# still "pass" the moment any other container answered on the same port.
+nodejs-app  | ana-node   | 3000 | 3000 | Node.js + Express
+python-app  | ana-python | 5000 | 5000 | Python + Flask
+java-app    | ana-java   | 8080 | 8080 | Java :: JDK HttpServer
+Apache-app  | ana-apache | 8081 |   80 | Apache HTTP Server
+React-app   | ana-react  | 8082 |   80 | Hello World :: React
+nginx-app   | ana-nginx  | 8083 |   80 | >Nginx<

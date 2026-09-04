@@ -1,0 +1,64 @@
+### nslookup google.com
+Non-authoritative answer:
+Server:  wifi.height8tech.com
+Address:  100.128.160.1
+
+Name:    google.com
+Addresses:  2404:6800:4000:1025::65
+	  2404:6800:4000:1025::64
+	  2404:6800:4000:1025::8a
+	  2404:6800:4000:1025::8b
+	  192.178.211.138
+	  192.178.211.102
+	  192.178.211.113
+	  192.178.211.139
+	  192.178.211.100
+	  192.178.211.101
+
+
+### nslookup -type=MX gmail.com
+Non-authoritative answer:
+Server:  wifi.height8tech.com
+Address:  100.128.160.1
+
+gmail.com	MX preference = 5, mail exchanger = gmail-smtp-in.l.google.com
+gmail.com	MX preference = 10, mail exchanger = alt1.gmail-smtp-in.l.google.com
+gmail.com	MX preference = 20, mail exchanger = alt2.gmail-smtp-in.l.google.com
+gmail.com	MX preference = 30, mail exchanger = alt3.gmail-smtp-in.l.google.com
+gmail.com	MX preference = 40, mail exchanger = alt4.gmail-smtp-in.l.google.com
+
+gmail.com	nameserver = ns4.google.com
+gmail.com	nameserver = ns1.google.com
+gmail.com	nameserver = ns3.google.com
+gmail.com	nameserver = ns2.google.com
+ns4.google.com	internet address = 216.239.38.10
+ns1.google.com	internet address = 216.239.32.10
+ns3.google.com	internet address = 216.239.36.10
+ns2.google.com	internet address = 216.239.34.10
+
+### nslookup -type=NS wikipedia.org
+Non-authoritative answer:
+Server:  wifi.height8tech.com
+Address:  100.128.160.1
+
+wikipedia.org	nameserver = ns0.wikimedia.org
+wikipedia.org	nameserver = ns1.wikimedia.org
+wikipedia.org	nameserver = ns2.wikimedia.org
+
+wikipedia.org	nameserver = ns1.wikimedia.org
+wikipedia.org	nameserver = ns2.wikimedia.org
+wikipedia.org	nameserver = ns0.wikimedia.org
+ns0.wikimedia.org	internet address = 208.80.154.238
+ns1.wikimedia.org	internet address = 208.80.153.231
+ns2.wikimedia.org	internet address = 198.35.27.27
+ns1.wikimedia.org	internet address = 208.80.153.231
+ns2.wikimedia.org	internet address = 198.35.27.27
+ns0.wikimedia.org	internet address = 208.80.154.238
+
+### reverse lookup of 8.8.8.8
+Server:  wifi.height8tech.com
+Address:  100.128.160.1
+
+Name:    dns.google
+Address:  8.8.8.8
+

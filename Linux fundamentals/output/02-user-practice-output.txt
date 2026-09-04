@@ -1,0 +1,134 @@
+dpkg-query: error in show format: may not be empty string
+dpkg-query: error in show format: may not be empty string
+# Ubuntu 24.04.4 LTS  |  adduser   |  passwd 
+# throwaway container, --rm; the test password below is TestPass123 and the box is gone
+
+=============== 0. Which adduser does this box have? ===============
+/usr/sbin/adduser: Perl script text executable
+Perl script  = Debian/Ubuntu wrapper (the good one).
+Symlink to useradd = RHEL family, no wrapper behaviour.
+
+=============== 1. The blunt way: useradd with no options ===============
+--- /etc/passwd entry ---
+u_bare:x:1001:1001::/home/u_bare:/bin/sh
+--- home directory? ---
+ls: cannot access '/home/u_bare': No such file or directory
+--- password set? (2nd field: ! or * means locked) ---
+u_bare:!
+
+No home directory. No password. Shell is whatever /etc/default/useradd says.
+The account exists but cannot really be used. This is the classic gotcha.
+
+=============== 2. useradd done properly (what you'd use in a script or Dockerfile) ===============
+u_flags:x:1002:1002:Scripted User:/home/u_flags:/bin/bash
+total 20
+drwxr-x--- 2 u_flags u_flags 4096 Sep  4 18:00 .
+drwxr-xr-x 1 root    root    4096 Sep  4 18:00 ..
+-rw-r--r-- 1 u_flags u_flags  220 Mar 31  2024 .bash_logout
+-rw-r--r-- 1 u_flags u_flags 3771 Mar 31  2024 .bashrc
+-rw-r--r-- 1 u_flags u_flags  807 Mar 31  2024 .profile
+Now it has a home and a shell — but still no password until you run passwd.
+
+=============== 3. The recommended way on Ubuntu: adduser (interactive) ===============
+This will prompt for a password and the optional full-name fields.
+info: Adding user `tester' ...
+info: Selecting UID/GID from range 1000 to 59999 ...
+info: Adding new group `tester' (1003) ...
+info: Adding new user `tester' (1003) with group `tester (1003)' ...
+info: Creating home directory `/home/tester' ...
+info: Copying files from `/etc/skel' ...
+New password: Retype new password: passwd: password updated successfully
+Changing the user information for tester
+Enter the new value, or press ENTER for the default
+	Full Name []: 	Room Number []: 	Work Phone []: 	Home Phone []: 	Other []: Use of uninitialized value $answer in chop at /usr/sbin/adduser line 877.
+Use of uninitialized value $answer in pattern match (m//) at /usr/sbin/adduser line 878.
+Use of uninitialized value $answer in pattern match (m//) at /usr/sbin/adduser line 879.
+Is the information correct? [Y/n] info: Adding new user `tester' to supplemental / extra groups `users' ...
+info: Adding user `tester' to group `users' ...
+
+=============== 4. Verify the account ===============
+--- u_bare ---
+uid=1001(u_bare) gid=1001(u_bare) groups=1001(u_bare)
+u_bare:x:1001:1001::/home/u_bare:/bin/sh
+
+--- u_flags ---
+uid=1002(u_flags) gid=1002(u_flags) groups=1002(u_flags)
+u_flags:x:1002:1002:Scripted User:/home/u_flags:/bin/bash
+
+--- tester ---
+uid=1003(tester) gid=1003(tester) groups=1003(tester),100(users)
+tester:x:1003:1003:Anantha Test User,,,:/home/tester:/bin/bash
+
+Other checks worth knowing:
+  sudo chage -l tester      # password aging
+  ls -la /home/tester       # /etc/skel files copied in
+  su - tester               # actually log in as them
+
+=============== 5. Add tester to the sudo group ===============
+
+=============== 6. Cleanup ===============
+
+Takeaway: adduser for a human at a terminal on Debian/Ubuntu,
+          useradd for scripts, containers and cross-distro portability.
+
+########## ADDENDUM — steps 5 and 6, run by hand ##########
+# The script asks its questions with read from stdin. adduser consumed the rest of
+# stdin on this non-interactive run, so steps 5 and 6 saw EOF and were skipped.
+# Same commands, run directly:
+
+$ usermod -aG sudo tester
+$ groups tester
+tester : tester sudo users
+
+# The -a is mandatory. Without it, -G REPLACES every supplementary group:
+$ usermod -G users tester      # deliberately WITHOUT -a
+$ groups tester
+tester : tester users
+# sudo is gone. That is how people lock themselves out of their own box.
+$ usermod -aG sudo tester      # put it back
+tester : tester sudo users
+
+$ ls -la /home/tester          # files copied out of /etc/skel
+total 20
+drwxr-x--- 2 tester tester 4096 Sep  4 18:00 .
+drwxr-xr-x 1 root   root   4096 Sep  4 18:00 ..
+-rw-r--r-- 1 tester tester  220 Sep  4 18:00 .bash_logout
+-rw-r--r-- 1 tester tester 3771 Sep  4 18:00 .bashrc
+-rw-r--r-- 1 tester tester  807 Sep  4 18:00 .profile
+
+$ chage -l tester
+Last password change					: Sep 04, 2026
+Password expires					: never
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 0
+Maximum number of days between password change		: 99999
+Number of days of warning before password expires	: 7
+
+$ cut -d: -f1,2 /etc/shadow | grep -E "^(u_bare|u_flags|tester):"   # hash truncated below
+u_bare:!...(truncated)
+u_flags:!...(truncated)
+tester:$y$j9T$5Al7K8YPfLE5Ob...(truncated)
+# ! means locked, no usable password. Only the adduser account has a real hash,
+# because adduser runs passwd for you and bare useradd does not.
+
+--- cleanup ---
+$ deluser --remove-home u_bare
+    info: Looking for files to backup/remove ...
+    warn: `/usr/bin/crontab' not executed. Skipping crontab removal. Package `cron' required.
+    info: Removing user `u_bare' ...
+$ deluser --remove-home u_flags
+    info: Looking for files to backup/remove ...
+    info: Removing files ...
+    warn: `/usr/bin/crontab' not executed. Skipping crontab removal. Package `cron' required.
+    info: Removing user `u_flags' ...
+$ deluser --remove-home tester
+    info: Looking for files to backup/remove ...
+    info: Removing files ...
+    warn: `/usr/bin/crontab' not executed. Skipping crontab removal. Package `cron' required.
+    info: Removing user `tester' ...
+
+$ getent passwd u_bare u_flags tester   # expect no output
+(getent exit 2 — nonzero, so none of the three resolve any more)
+$ ls -A /home
+ubuntu

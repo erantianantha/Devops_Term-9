@@ -1,0 +1,22 @@
+# Task 1 - the single-stage version of the SAME app, for comparison.
+# =============================================================================
+# Everything happens in one image, so everything stays in it: devDependencies,
+# the esbuild binary, the npm cache, the source tree and the bundle.
+#
+# Nothing here is wrong. It works. It is just carrying the build with it
+# forever, and every megabyte is pulled again on every deploy to every node.
+# =============================================================================
+
+FROM node:20-alpine
+WORKDIR /srv
+
+COPY package.json ./
+RUN npm install --no-audit --no-fund
+
+COPY build.js ./
+COPY src ./src
+RUN npm run build
+
+ENV NODE_ENV=production PORT=3000
+EXPOSE 3000
+CMD ["node", "dist/bundle.js"]

@@ -1,0 +1,6 @@
+node_modules/
+dist/
+__pycache__/
+*.class
+# the throwaway report directories the scripts create
+sysinfo-out/

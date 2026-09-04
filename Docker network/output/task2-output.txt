@@ -1,0 +1,68 @@
+
+--- the image
+  httpd:2.4-alpine pulled
+
+--- running it with --network host
+  $ docker run -d --network host httpd:2.4-alpine   (Listen 8183)
+
+--- docker ps
+NAMES                STATUS         PORTS
+ana-apache-hostnet   Up 3 seconds   
+  the PORTS column is EMPTY, and that is correct: there is no mapping,
+  because there is no separate network namespace to map out of.
+
+--- no -p was given, and none is allowed
+  WARNING: Published ports are discarded when using host network mode
+
+--- reaching it from inside the docker host
+  <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+  <html>
+  <head>
+  <title>It works! Apache httpd</title>
+  </head>
+  <body>
+
+--- what the docker host thinks is listening
+  tcp        0      0 :::8183                 :::*                    LISTEN      
+
+--- reaching it from Windows
+  curl http://localhost:8183/  ->  HTTP 000
+
+  If that says "no response", nothing is broken. Docker Desktop does not run
+  Linux containers on Windows directly -- it runs them inside a WSL2 virtual
+  machine, and THAT vm is "the docker host". --network host attached Apache to
+  the vm's network stack, so it really is on the docker host's port, just not
+  on Windows'.
+
+  On a Linux machine there is no vm in between and http://localhost would
+  answer immediately. This is the practical reason --network host is a Linux
+  feature and -p is the portable way to publish anything.
+
+--- the same image published the normal way, so Windows can reach it
+NAMES                  STATUS         PORTS
+ana-apache-published   Up 2 seconds   0.0.0.0:8181->80/tcp, [::]:8181->80/tcp
+
+  $ curl -I http://localhost:8181/
+    HTTP/1.1 200 OK
+    Date: Fri, 04 Sep 2026 17:19:46 GMT
+    Server: Apache/2.4.68 (Unix)
+    Last-Modified: Fri, 07 Nov 2025 08:23:08 GMT
+
+  Now the PORTS column has 0.0.0.0:8181->80/tcp and Windows can reach it. The
+  container is back in its own namespace and docker is forwarding for it.
+
+  When host networking is worth it:
+    - throughput: it skips docker's NAT hop, which matters for high packet
+      rates, not for a web page
+    - services that open many ports, where publishing each one is tedious
+    - protocols NAT breaks: DHCP, mDNS, anything broadcast, or anything that
+      needs to see the real client IP
+    - monitoring agents that must see the host's real interfaces
+
+  What it costs:
+    - no network isolation at all: the container can bind any host port and
+      see traffic it has no business seeing
+    - port collisions with the host and with every other host-mode container
+    - it is Linux-only in practice, as demonstrated above
+
+  clean up: bash task2-host-network.sh clean

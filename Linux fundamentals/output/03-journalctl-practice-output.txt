@@ -1,0 +1,197 @@
+# Ubuntu 24.04.4 LTS in a --privileged container with systemd as PID 1
+# systemctl is-system-running: running
+# systemd systemd 255 (255.4-1ubuntu8.17)
+
+=============== 1. Is the journal persistent or does it die on reboot? ===============
+
+$ journalctl --disk-usage
+Archived and active journals take up 8.0M in the file system.
+-> /var/log/journal exists: logs SURVIVE reboots.
+
+=============== 2. Basic reading ===============
+
+$ journalctl -n 15 --no-pager
+Sep 04 18:02:43 52d8de9e7181 kernel: docker0: port 17(veth7731cfa) entered forwarding state
+Sep 04 18:02:52 52d8de9e7181 kernel: docker0: port 17(veth7731cfa) entered disabled state
+Sep 04 18:02:52 52d8de9e7181 kernel: veth0ce2368: renamed from eth0
+Sep 04 18:02:52 52d8de9e7181 kernel: docker0: port 17(veth7731cfa) entered disabled state
+Sep 04 18:02:52 52d8de9e7181 kernel: veth7731cfa (unregistering): left allmulticast mode
+Sep 04 18:02:52 52d8de9e7181 kernel: veth7731cfa (unregistering): left promiscuous mode
+Sep 04 18:02:52 52d8de9e7181 kernel: docker0: port 17(veth7731cfa) entered disabled state
+Sep 04 18:03:00 52d8de9e7181 systemd-resolved[68]: Clock change detected. Flushing caches.
+Sep 04 18:03:12 52d8de9e7181 kernel: docker0: port 17(veth4835feb) entered blocking state
+Sep 04 18:03:12 52d8de9e7181 kernel: docker0: port 17(veth4835feb) entered disabled state
+Sep 04 18:03:12 52d8de9e7181 kernel: veth4835feb: entered allmulticast mode
+Sep 04 18:03:12 52d8de9e7181 kernel: veth4835feb: entered promiscuous mode
+Sep 04 18:03:12 52d8de9e7181 kernel: eth0: renamed from veth9aa1857
+Sep 04 18:03:12 52d8de9e7181 kernel: docker0: port 17(veth4835feb) entered blocking state
+Sep 04 18:03:12 52d8de9e7181 kernel: docker0: port 17(veth4835feb) entered forwarding state
+
+$ journalctl -r -n 5 --no-pager
+Sep 04 18:03:12 52d8de9e7181 kernel: docker0: port 17(veth4835feb) entered forwarding state
+Sep 04 18:03:12 52d8de9e7181 kernel: docker0: port 17(veth4835feb) entered blocking state
+Sep 04 18:03:12 52d8de9e7181 kernel: eth0: renamed from veth9aa1857
+Sep 04 18:03:12 52d8de9e7181 kernel: veth4835feb: entered promiscuous mode
+Sep 04 18:03:12 52d8de9e7181 kernel: veth4835feb: entered allmulticast mode
+
+=============== 3. Boots ===============
+
+$ journalctl --list-boots
+IDX BOOT ID                          FIRST ENTRY                 LAST ENTRY
+  0 38b240d1c81c4e7a87887dbf1f71b94e Fri 2026-09-04 18:01:18 UTC Fri 2026-09-04 18:03:12 UTC
+  journalctl -b       this boot
+  journalctl -b -1    the previous boot — where you find out why it crashed
+
+=============== 4. Logs for a specific service ===============
+Using 'systemd-logind' as the example service.
+
+$ systemctl status systemd-logind --no-pager
+● systemd-logind.service - User Login Management
+     Loaded: loaded (/usr/lib/systemd/system/systemd-logind.service; static)
+    Drop-In: /usr/lib/systemd/system/systemd-logind.service.d
+             └─dbus.conf
+     Active: active (running) since Fri 2026-09-04 18:01:18 UTC; 1min 59s ago
+       Docs: man:sd-login(3)
+             man:systemd-logind.service(8)
+             man:logind.conf(5)
+             man:org.freedesktop.login1(5)
+   Main PID: 80 (systemd-logind)
+     Status: "Processing requests..."
+      Tasks: 1 (limit: 9113)
+   FD Store: 0 (limit: 512)
+     Memory: 1.3M (peak: 2.0M)
+        CPU: 40ms
+     CGroup: /docker/52d8de9e718149a1690ed9fcf55225e601fff05f9e6145099397bfaadd067263/system.slice/systemd-logind.service
+             └─80 /usr/lib/systemd/systemd-logind
+
+Sep 04 18:01:18 52d8de9e7181 systemd[1]: Starting systemd-logind.service - User Login Management...
+Sep 04 18:01:18 52d8de9e7181 systemd-logind[80]: New seat seat0.
+
+$ journalctl -u systemd-logind -n 20 --no-pager
+Sep 04 18:01:18 52d8de9e7181 systemd[1]: Starting systemd-logind.service - User Login Management...
+Sep 04 18:01:18 52d8de9e7181 systemd-logind[80]: New seat seat0.
+Sep 04 18:01:18 52d8de9e7181 systemd[1]: Started systemd-logind.service - User Login Management.
+
+$ journalctl -u systemd-logind --since today --no-pager
+Sep 04 18:01:18 52d8de9e7181 systemd[1]: Starting systemd-logind.service - User Login Management...
+Sep 04 18:01:18 52d8de9e7181 systemd-logind[80]: New seat seat0.
+Sep 04 18:01:18 52d8de9e7181 systemd[1]: Started systemd-logind.service - User Login Management.
+
+$ journalctl -u systemd-logind -p err --no-pager
+-- No entries --
+
+The two you'll type by reflex:
+  journalctl -xeu systemd-logind     # after a failed 'systemctl start'
+  journalctl -u systemd-logind -f    # follow live while you poke the service
+
+=============== 5. Priority filtering (0 emerg .. 7 debug; -p is inclusive of worse) ===============
+
+$ journalctl -p err -b --no-pager
+Sep 04 18:01:18 52d8de9e7181 kernel: PCI: Fatal: No config space access function found
+Sep 04 18:01:18 52d8de9e7181 unknown: WSL (1 - init(docker-desktop)) ERROR: ConfigApplyWindowsLibPath:2091: open /etc/ld.so.conf.d/ld.wsl.conf failed 2
+Sep 04 18:01:18 52d8de9e7181 kernel: misc dxg: dxgk: dxgkio_is_feature_enabled: Ioctl failed: -22
+Sep 04 18:01:18 52d8de9e7181 kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -22
+Sep 04 18:01:18 52d8de9e7181 kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -22
+Sep 04 18:01:18 52d8de9e7181 kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -22
+Sep 04 18:01:18 52d8de9e7181 kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -2
+Sep 04 18:01:18 52d8de9e7181 kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -22
+Sep 04 18:01:18 52d8de9e7181 kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -22
+Sep 04 18:01:18 52d8de9e7181 kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -22
+Sep 04 18:01:18 52d8de9e7181 kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -2
+Sep 04 18:01:18 52d8de9e7181 unknown: WSL (188) ERROR: CheckConnection: getaddrinfo() failed: -5
+Sep 04 18:01:18 52d8de9e7181 kernel: virtiofs: Unknown parameter 'negative_dentry_timeout'
+
+$ journalctl -p warning..err -n 10 --no-pager
+Sep 04 18:01:18 52d8de9e7181 kernel: overlayfs: lowerdir is in-use as upperdir/workdir of another mount, accessing files from both mounts will result in undefined behavior.
+Sep 04 18:01:18 52d8de9e7181 kernel: overlayfs: lowerdir is in-use as upperdir/workdir of another mount, accessing files from both mounts will result in undefined behavior.
+Sep 04 18:01:18 52d8de9e7181 kernel: overlayfs: lowerdir is in-use as upperdir/workdir of another mount, accessing files from both mounts will result in undefined behavior.
+Sep 04 18:01:18 52d8de9e7181 kernel: overlayfs: lowerdir is in-use as upperdir/workdir of another mount, accessing files from both mounts will result in undefined behavior.
+Sep 04 18:01:18 52d8de9e7181 kernel: overlayfs: lowerdir is in-use as upperdir/workdir of another mount, accessing files from both mounts will result in undefined behavior.
+Sep 04 18:01:18 52d8de9e7181 kernel: overlayfs: lowerdir is in-use as upperdir/workdir of another mount, accessing files from both mounts will result in undefined behavior.
+Sep 04 18:01:18 52d8de9e7181 kernel: overlayfs: lowerdir is in-use as upperdir/workdir of another mount, accessing files from both mounts will result in undefined behavior.
+Sep 04 18:01:18 52d8de9e7181 kernel: overlayfs: lowerdir is in-use as upperdir/workdir of another mount, accessing files from both mounts will result in undefined behavior.
+Sep 04 18:01:18 52d8de9e7181 kernel: overlayfs: lowerdir is in-use as upperdir/workdir of another mount, accessing files from both mounts will result in undefined behavior.
+Sep 04 18:01:18 52d8de9e7181 (cron)[75]: cron.service: Referenced but unset environment variable evaluates to an empty string: EXTRA_OPTS
+
+=============== 6. Time filtering ===============
+
+$ journalctl --since '1 hour ago' -n 10 --no-pager
+Sep 04 18:02:52 52d8de9e7181 kernel: veth7731cfa (unregistering): left promiscuous mode
+Sep 04 18:02:52 52d8de9e7181 kernel: docker0: port 17(veth7731cfa) entered disabled state
+Sep 04 18:03:00 52d8de9e7181 systemd-resolved[68]: Clock change detected. Flushing caches.
+Sep 04 18:03:12 52d8de9e7181 kernel: docker0: port 17(veth4835feb) entered blocking state
+Sep 04 18:03:12 52d8de9e7181 kernel: docker0: port 17(veth4835feb) entered disabled state
+Sep 04 18:03:12 52d8de9e7181 kernel: veth4835feb: entered allmulticast mode
+Sep 04 18:03:12 52d8de9e7181 kernel: veth4835feb: entered promiscuous mode
+Sep 04 18:03:12 52d8de9e7181 kernel: eth0: renamed from veth9aa1857
+Sep 04 18:03:12 52d8de9e7181 kernel: docker0: port 17(veth4835feb) entered blocking state
+Sep 04 18:03:12 52d8de9e7181 kernel: docker0: port 17(veth4835feb) entered forwarding state
+
+$ journalctl --since today -p err --no-pager
+Sep 04 18:01:18 52d8de9e7181 kernel: PCI: Fatal: No config space access function found
+Sep 04 18:01:18 52d8de9e7181 unknown: WSL (1 - init(docker-desktop)) ERROR: ConfigApplyWindowsLibPath:2091: open /etc/ld.so.conf.d/ld.wsl.conf failed 2
+Sep 04 18:01:18 52d8de9e7181 kernel: misc dxg: dxgk: dxgkio_is_feature_enabled: Ioctl failed: -22
+Sep 04 18:01:18 52d8de9e7181 kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -22
+Sep 04 18:01:18 52d8de9e7181 kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -22
+Sep 04 18:01:18 52d8de9e7181 kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -22
+Sep 04 18:01:18 52d8de9e7181 kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -2
+Sep 04 18:01:18 52d8de9e7181 kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -22
+Sep 04 18:01:18 52d8de9e7181 kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -22
+Sep 04 18:01:18 52d8de9e7181 kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -22
+Sep 04 18:01:18 52d8de9e7181 kernel: misc dxg: dxgk: dxgkio_query_adapter_info: Ioctl failed: -2
+Sep 04 18:01:18 52d8de9e7181 unknown: WSL (188) ERROR: CheckConnection: getaddrinfo() failed: -5
+Sep 04 18:01:18 52d8de9e7181 kernel: virtiofs: Unknown parameter 'negative_dentry_timeout'
+
+=============== 7. Kernel messages (the dmesg equivalent) ===============
+
+$ journalctl -k -n 10 --no-pager
+Sep 04 18:02:52 52d8de9e7181 kernel: veth7731cfa (unregistering): left allmulticast mode
+Sep 04 18:02:52 52d8de9e7181 kernel: veth7731cfa (unregistering): left promiscuous mode
+Sep 04 18:02:52 52d8de9e7181 kernel: docker0: port 17(veth7731cfa) entered disabled state
+Sep 04 18:03:12 52d8de9e7181 kernel: docker0: port 17(veth4835feb) entered blocking state
+Sep 04 18:03:12 52d8de9e7181 kernel: docker0: port 17(veth4835feb) entered disabled state
+Sep 04 18:03:12 52d8de9e7181 kernel: veth4835feb: entered allmulticast mode
+Sep 04 18:03:12 52d8de9e7181 kernel: veth4835feb: entered promiscuous mode
+Sep 04 18:03:12 52d8de9e7181 kernel: eth0: renamed from veth9aa1857
+Sep 04 18:03:12 52d8de9e7181 kernel: docker0: port 17(veth4835feb) entered blocking state
+Sep 04 18:03:12 52d8de9e7181 kernel: docker0: port 17(veth4835feb) entered forwarding state
+
+=============== 8. Other filters ===============
+
+$ journalctl _PID=1 -n 5 --no-pager
+Sep 04 18:01:18 52d8de9e7181 systemd[1]: Starting systemd-update-utmp-runlevel.service - Record Runlevel Change in UTMP...
+Sep 04 18:01:18 52d8de9e7181 systemd[1]: systemd-update-utmp-runlevel.service: Deactivated successfully.
+Sep 04 18:01:18 52d8de9e7181 systemd[1]: Finished systemd-update-utmp-runlevel.service - Record Runlevel Change in UTMP.
+Sep 04 18:01:18 52d8de9e7181 systemd[1]: Startup finished in 462ms.
+Sep 04 18:01:18 52d8de9e7181 systemd[1]: dmesg.service: Deactivated successfully.
+
+$ journalctl -g 'Failed|error' -n 10 --no-pager
+-- No entries --
+
+Look at all the structured metadata on a single record:
+
+$ journalctl -n 1 -o json-pretty --no-pager
+{
+	"_MACHINE_ID" : "8b121157d3904b4a8a297b45839c6d93",
+	"__MONOTONIC_TIMESTAMP" : "16118016189",
+	"_TRANSPORT" : "kernel",
+	"SYSLOG_FACILITY" : "0",
+	"_RUNTIME_SCOPE" : "system",
+	"_SOURCE_MONOTONIC_TIMESTAMP" : "16117236317",
+	"MESSAGE" : "docker0: port 17(veth4835feb) entered forwarding state",
+	"SYSLOG_IDENTIFIER" : "kernel",
+	"_BOOT_ID" : "38b240d1c81c4e7a87887dbf1f71b94e",
+	"PRIORITY" : "6",
+	"__CURSOR" : "s=77540139d94045cebf843b885bdbc776;i=21d5;b=38b240d1c81c4e7a87887dbf1f71b94e;m=3c0b568bd;t=65aac14ed1e1f;x=8498898e8bbc55a8",
+	"__SEQNUM_ID" : "77540139d94045cebf843b885bdbc776",
+	"__REALTIME_TIMESTAMP" : "1788544992222751",
+	"__SEQNUM" : "8661",
+	"_HOSTNAME" : "52d8de9e7181"
+}
+
+=============== 9. Housekeeping (not run here — they delete logs) ===============
+  sudo journalctl --vacuum-size=200M   # trim the journal down to 200 MB
+  sudo journalctl --vacuum-time=7d     # drop anything older than a week
+  sudo journalctl --verify             # integrity check
+
+Done. If you want to follow something live now:  journalctl -f

@@ -1,0 +1,21 @@
+### experiment: what a loopback bind looks like from outside the container
+# the ONLY change from nodejs-app/server.js is BIND = 127.0.0.1
+
+$ docker build -t ana-node-loopback . && docker run -d --name ana-node-loopback -p 3999:3000 ana-node-loopback
+built
+started
+
+$ docker ps --filter name=ana-node-loopback
+NAMES               STATUS                            PORTS
+ana-node-loopback   Up 3 seconds (health: starting)   0.0.0.0:3999->3000/tcp, [::]:3999->3000/tcp
+
+$ docker logs ana-node-loopback        # the app is convinced it is fine
+ana-node up on http://127.0.0.1:3000
+
+$ curl -sS -m 5 http://localhost:3999/   # from the host
+curl: (52) Empty reply from server
+
+$ docker exec ana-node-loopback wget -qO- http://127.0.0.1:3000/ | head -3   # from INSIDE
+<!doctype html>
+<html lang="en">
+<head>

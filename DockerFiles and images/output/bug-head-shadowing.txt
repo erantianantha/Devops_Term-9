@@ -1,0 +1,117 @@
+
+########## TASK 1  multi-stage vs single-stage, same application
+
+$ docker build -t ana-ms-multi  multi-stage-app
+$ docker build -t ana-ms-single -f multi-stage-app/Dockerfile.single multi-stage-app
+
+REPOSITORY         TAG       SIZE
+ana-ms-single      latest    239MB
+ana-ms-multi       latest    199MB
+
+what is in the difference (contents of the single-stage image that
+the multi-stage one does not carry):
+  node_modules : 14.1M
+  esbuild bin  : 9.5M
+  source tree  : 4.0K
+
+and the multi-stage image, for comparison:
+  node_modules : 4.4M
+  esbuild bin  : 
+  files in /srv: bundle.js
+node_modules
+package-lock.json
+package.json
+
+$ docker run -d --name ana-ms-multi -p 8090:3000 ana-ms-multi
+HTTP 200 from http://localhost:8090/
+  <head><meta charset="utf-8"><title>Multi-stage build</title>
+  <h1>Hello from a multi-stage build</h1>
+  /health -> {"ok":true,"build":"multi-stage"}
+
+########## TASK 2  layers and the build cache
+
+--- docker history ana-ms-multi (newest layer first) ---
+
+SIZE      CREATED BY
+0B        CMD ["node" "bundle.js"]
+0B        USER node
+0B        EXPOSE [3000/tcp]
+0B        ENV NODE_ENV=production PORT=3000
+12.3kB    COPY /build/dist/bundle.js ./bundle.js # buildkit
+4.77MB    RUN /bin/sh -c npm install --omit=dev --no-audit --no-fund && npm cache clean --force # buildkit
+12.3kB    COPY package.json ./ # buildkit
+4.1kB     WORKDIR /srv
+0B        CMD ["node"]
+0B        ENTRYPOINT ["docker-entrypoint.sh"]
+20.5kB    COPY docker-entrypoint.sh /usr/local/bin/ # buildkit
+5.48MB    RUN /bin/sh -c apk add --no-cache --virtual .build-deps-yarn curl gnupg tar   && export GNUPGHOME="$
+0B        ENV YARN_VERSION=1.22.22
+130MB     RUN /bin/sh -c addgroup -g 1000 node     && adduser -u 1000 -G node -s /bin/sh -D node     && apk ad
+0B        ENV NODE_VERSION=20.20.2
+0B        CMD ["/bin/sh"]
+9.11MB    ADD alpine-minirootfs-3.23.4-x86_64.tar.gz / # buildkit
+
+Only instructions that add files have a size. WORKDIR, ENV, EXPOSE,
+USER and CMD are metadata: they are layers, but 0 bytes of them.
+
+--- experiment A: change the SOURCE, rebuild ---
+
+
+########## -14
+
+
+rebuild after a source change: 2 seconds
+npm install was CACHED: the manifest did not change, so the layer that
+installs dependencies was reused. Only the copy and the bundle re-ran.
+
+--- experiment B: change PACKAGE.JSON, rebuild ---
+
+
+########## -14
+
+
+rebuild after a manifest change: 8 seconds
+npm install ran again in BOTH stages. Every instruction after the one
+that changed is invalidated, whether or not it depends on the change.
+
+########## TASK 3  the same service packaged three ways
+
+
+--- ana-deploy-node from task3-deployments/nodejs-app
+  built 
+########## -1, running on http://localhost:8091
+
+--- ana-deploy-python from task3-deployments/python-app
+  built 
+########## -1, running on http://localhost:8092
+
+--- ana-deploy-java from task3-deployments/java-app
+  built 
+########## -1, running on http://localhost:8093
+
+  ana-deploy-node    HTTP 200   
+########## -1  {"ok":true,"stack":"node","host":"19278e2d2f86"}
+  ana-deploy-python  HTTP 200   
+########## -1  {"host":"d563a286643a","ok":true,"stack":"python"}
+  ana-deploy-java    HTTP 200   
+########## -1  {"ok":true,"stack":"java","host":"bc4ff146a710"}
+
+--- what the JDK stage would have cost, if it had shipped ---
+REPOSITORY:TAG             SIZE
+eclipse-temurin:21-jre     459MB
+eclipse-temurin:21-jdk     726MB
+
+NAMES               STATUS          PORTS
+ana-deploy-java     Up 2 seconds    0.0.0.0:8093->8080/tcp, [::]:8093->8080/tcp
+ana-deploy-python   Up 6 seconds    0.0.0.0:8092->5000/tcp, [::]:8092->5000/tcp
+ana-deploy-node     Up 17 seconds   0.0.0.0:8091->3000/tcp, [::]:8091->3000/tcp
+ana-ms-multi        Up 35 seconds   0.0.0.0:8090->3000/tcp, [::]:8090->3000/tcp
+
+########## done
+
+  http://localhost:8090   task 1, multi-stage app
+  http://localhost:8091   task 3, node
+  http://localhost:8092   task 3, python
+  http://localhost:8093   task 3, java
+
+  bash run-all.sh clean   when finished

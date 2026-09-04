@@ -1,0 +1,265 @@
+
+============================================================
+ SETUP  a fresh repository
+============================================================
+
+$ git init -q -b main .
+  repo: /tmp/tmp.SgB542rXke
+
+$ git add report.txt
+warning: in the working copy of 'report.txt', LF will be replaced by CRLF the next time Git touches it
+
+$ git commit -q -m 'Initial commit: add report.txt' && git log --oneline
+05bbb35 Initial commit: add report.txt
+
+============================================================
+ TASK 1  git commit -m  vs  git commit -a -m
+============================================================
+
+Three kinds of change at once, which is what makes the difference visible:
+warning: in the working copy of 'scratch.txt', LF will be replaced by CRLF the next time Git touches it
+
+$ git status --short
+ M report.txt
+ D scratch.txt
+?? appendix.txt
+
+  Reading `git status --short`: the LEFT column is the staging area, the RIGHT
+  column is the working directory.
+
+     M report.txt     modified, NOT staged   (space then M)
+    ?? appendix.txt   git has never seen this file
+     D scratch.txt    deleted, NOT staged
+
+============================================================
+ TASK 1 (a)  plain git commit -m, with nothing staged
+============================================================
+
+$ git commit -m 'attempt with nothing staged'
+On branch main
+Changes not staged for commit:
+  (use "git add/rm <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   report.txt
+	deleted:    scratch.txt
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	appendix.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
+
+$ git log --oneline
+1523a43 Add scratch.txt so it can be deleted later
+05bbb35 Initial commit: add report.txt
+
+  Refused, and nothing was recorded. `git commit` only ever looks at the
+  staging area, and the staging area is empty. Notice git separates the two
+  kinds of change in its own output -- "not staged" and "untracked" are
+  different states, and that distinction is the whole of Task 1.
+
+============================================================
+ TASK 1 (b)  git commit -a -m
+============================================================
+
+$ git commit -a -m 'Task 1: -a picks up the modification and the deletion'
+warning: in the working copy of 'report.txt', LF will be replaced by CRLF the next time Git touches it
+[main d49edfd] Task 1: -a picks up the modification and the deletion
+ 2 files changed, 1 insertion(+), 1 deletion(-)
+ delete mode 100644 scratch.txt
+
+$ git log --oneline
+d49edfd Task 1: -a picks up the modification and the deletion
+1523a43 Add scratch.txt so it can be deleted later
+05bbb35 Initial commit: add report.txt
+
+$ git show --stat --oneline HEAD
+d49edfd Task 1: -a picks up the modification and the deletion
+ report.txt  | 1 +
+ scratch.txt | 1 -
+ 2 files changed, 1 insertion(+), 1 deletion(-)
+
+  Two files went in without a single `git add`:
+    report.txt   modified   -> staged and committed
+    scratch.txt  deleted    -> staged and committed
+
+  A deletion is a change to a file git is tracking, so -a catches it. You do
+  not need `git rm`.
+
+============================================================
+ TASK 1 (c)  what -a did NOT do
+============================================================
+
+$ git status --short
+?? appendix.txt
+
+$ ls
+appendix.txt
+report.txt
+
+  appendix.txt is still untracked and is not in that commit. This is the part
+  that catches people out: write a new file, `git commit -a -m 'add feature'`,
+  push, and the file is simply not there.
+
+  -a stages changes to files git ALREADY TRACKS. A new file is not tracked
+  yet, so there is nothing for -a to notice.
+
+============================================================
+ TASK 1 (d)  a new file needs an explicit git add
+============================================================
+
+$ git add appendix.txt
+warning: in the working copy of 'appendix.txt', LF will be replaced by CRLF the next time Git touches it
+
+$ git commit -q -m 'Task 1: appendix.txt needed an explicit git add' && git show --stat --oneline HEAD
+c5a881a Task 1: appendix.txt needed an explicit git add
+ appendix.txt | 1 +
+ 1 file changed, 1 insertion(+)
+
+$ git status --short
+
+  "create mode 100644" in that output is git saying it has never seen this
+  path before.
+
+  The rule, stated precisely:
+
+    git commit -a   ==  git add -u  then commit     (tracked files only)
+                    !=  git add -A                  (which includes new files)
+
+              modified    deleted    new
+    -a           yes        yes       NO
+    add -u       yes        yes       NO
+    add -A       yes        yes       yes
+
+============================================================
+ TASK 2  cherry-pick
+============================================================
+
+$ git log --oneline
+c5a881a Task 1: appendix.txt needed an explicit git add
+d49edfd Task 1: -a picks up the modification and the deletion
+1523a43 Add scratch.txt so it can be deleted later
+05bbb35 Initial commit: add report.txt
+
+============================================================
+ TASK 2 (a)  a branch with three commits
+============================================================
+
+$ git switch -c hotfix-branch
+Switched to a new branch 'hotfix-branch'
+warning: in the working copy of 'wip-one.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'the-fix.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'wip-two.txt', LF will be replaced by CRLF the next time Git touches it
+
+$ git log --oneline -4
+bcd6616 branch: more work in progress, NOT for main
+4bc1036 branch: THE FIX that main needs now
+01655ec branch: work in progress, NOT for main
+c5a881a Task 1: appendix.txt needed an explicit git add
+
+============================================================
+ TASK 2 (b)  identify the one commit
+============================================================
+  the commit I want is 4bc1036
+
+$ git show --stat --oneline 4bc1036
+4bc1036 branch: THE FIX that main needs now
+ the-fix.txt | 1 +
+ 1 file changed, 1 insertion(+)
+
+  Checking the contents BEFORE picking is the two second habit that stops
+  you copying the wrong hash:
+
+$ git show 4bc1036:the-fix.txt
+the fix: timeout raised from 5s to 30s
+
+============================================================
+ TASK 2 (c)  switch to main first
+============================================================
+
+$ git switch main
+Switched to branch 'main'
+
+$ ls
+appendix.txt
+report.txt
+
+  none of the branch's files are here. cherry-pick applies to the branch
+  you are standing on, so you switch to the destination and then pick.
+
+============================================================
+ TASK 2 (d)  the cherry-pick
+============================================================
+
+$ git cherry-pick 4bc1036
+[main ffc8842] branch: THE FIX that main needs now
+ Date: Fri Sep 4 23:02:30 2026 +0530
+ 1 file changed, 1 insertion(+)
+ create mode 100644 the-fix.txt
+
+============================================================
+ TASK 2 (e)  verify it three ways
+============================================================
+
+$ git log --oneline -3
+ffc8842 branch: THE FIX that main needs now
+c5a881a Task 1: appendix.txt needed an explicit git add
+d49edfd Task 1: -a picks up the modification and the deletion
+
+$ ls
+appendix.txt
+report.txt
+the-fix.txt
+
+$ cat the-fix.txt
+the fix: timeout raised from 5s to 30s
+
+  In the log, on disk, and with the right contents. The last one matters:
+  a commit with the wrong content still looks perfect in git log.
+
+============================================================
+ TASK 2 (f)  what did NOT come with it
+============================================================
+
+$ ls
+appendix.txt
+report.txt
+the-fix.txt
+
+  wip-one.txt and wip-two.txt are absent. A merge would have brought all
+  three commits; cherry-pick brought exactly the one named.
+
+============================================================
+ TASK 2 (g)  the hash changed
+============================================================
+  original on the branch : 4bc1036
+  the copy on main       : ffc8842
+
+$ git log --oneline --graph --all
+* bcd6616 branch: more work in progress, NOT for main
+* 4bc1036 branch: THE FIX that main needs now
+* 01655ec branch: work in progress, NOT for main
+| * ffc8842 branch: THE FIX that main needs now
+|/  
+* c5a881a Task 1: appendix.txt needed an explicit git add
+* d49edfd Task 1: -a picks up the modification and the deletion
+* 1523a43 Add scratch.txt so it can be deleted later
+* 05bbb35 Initial commit: add report.txt
+
+  Same message, same change, different hash, and the original is still sitting
+  on hotfix-branch untouched.
+
+  A commit's hash covers its content AND its metadata, including its parent.
+  The branch commit's parent is the WIP commit; this one's parent is main's
+  tip. Different parent, different hash. So cherry-pick does not move a commit
+  -- it replays the change as a new one.
+
+  Consequence worth knowing: if hotfix-branch is later merged into main, the
+  same change exists as two commits. Usually git works it out; occasionally it
+  produces a conflict that looks like it came from nowhere. `-x` (see
+  extras.sh) at least leaves a note saying where the duplicate came from.
+
+============================================================
+ FINISHED
+============================================================
+  the throwaway repo at /tmp/tmp.SgB542rXke is deleted now.

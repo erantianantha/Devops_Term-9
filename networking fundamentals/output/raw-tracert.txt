@@ -1,0 +1,19 @@
+### tracert google.com (first 12 hops)
+
+Tracing route to google.com [192.178.211.102]
+over a maximum of 12 hops:
+
+  1     6 ms     3 ms     5 ms  100.128.160.1 
+  2    14 ms    15 ms    45 ms  114.79.130.29 
+  3    14 ms    29 ms    15 ms  72.14.208.165 
+  4     *       61 ms   172 ms  192.178.84.175 
+  5    67 ms     *       96 ms  142.250.213.100 
+  6    53 ms    22 ms    75 ms  192.178.254.235 
+  7    21 ms    43 ms    20 ms  142.251.224.133 
+  8    34 ms    18 ms    16 ms  192.178.254.121 
+  9     *        *        *     Request timed out.
+ 10     *        *        *     Request timed out.
+ 11     *        *        *     Request timed out.
+ 12     *        *        *     Request timed out.
+
+Trace complete.

@@ -1,0 +1,63 @@
+   client 29.4.2 / server 29.7.2 (linux)
+
+== building images
+   ana-node    <- nodejs-app/
+               built
+   ana-python  <- python-app/
+               built
+   ana-java    <- java-app/
+               built
+   ana-apache  <- Apache-app/
+               built
+   ana-react   <- React-app/
+               built
+   ana-nginx   <- nginx-app/
+               built
+
+== images
+REPOSITORY   TAG       SIZE      CREATED
+ana-react    latest    73.9MB    18 seconds ago
+ana-nginx    latest    73.7MB    38 seconds ago
+ana-apache   latest    96.2MB    42 seconds ago
+ana-java     latest    454MB     45 seconds ago
+ana-python   latest    196MB     49 seconds ago
+ana-node     latest    204MB     56 seconds ago
+
+== starting containers
+   ana-node    http://localhost:3000  (container port 3000)
+   ana-python  http://localhost:5000  (container port 5000)
+   ana-java    http://localhost:8080  (container port 8080)
+   ana-apache  http://localhost:8081  (container port 80)
+   ana-react   http://localhost:8082  (container port 80)
+   ana-nginx   http://localhost:8083  (container port 80)
+
+== docker ps
+NAMES        STATUS                   PORTS
+ana-nginx    Up Less than a second    0.0.0.0:8083->80/tcp, [::]:8083->80/tcp
+ana-react    Up 1 second              0.0.0.0:8082->80/tcp, [::]:8082->80/tcp
+ana-apache   Up 2 seconds             0.0.0.0:8081->80/tcp, [::]:8081->80/tcp
+ana-java     Up 3 seconds             0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp
+ana-python   Up 4 seconds             0.0.0.0:5000->5000/tcp, [::]:5000->5000/tcp
+ana-node     Up 5 seconds (healthy)   0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp
+
+== waiting for the slower containers
+
+== checking each app
+   PASS  ana-node    HTTP 200  http://localhost:3000
+   PASS  ana-python  HTTP 200  http://localhost:5000
+   PASS  ana-java    HTTP 200  http://localhost:8080
+   PASS  ana-apache  HTTP 200  http://localhost:8081
+   PASS  ana-react   HTTP 200  http://localhost:8082
+   PASS  ana-nginx   HTTP 200  http://localhost:8083
+
+== result: 6 passed, 0 failed
+
+== open these in a browser
+   http://localhost:3000   ana-node
+   http://localhost:5000   ana-python
+   http://localhost:8080   ana-java
+   http://localhost:8081   ana-apache
+   http://localhost:8082   ana-react
+   http://localhost:8083   ana-nginx
+
+   tear down with: bash build-and-run.sh down
